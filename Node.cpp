@@ -6,7 +6,7 @@ using namespace std;
 
 /*Constructor(s)*/
 
-Node::Node(){
+Node::Node() {
 	this->next = 0;
 }
 
@@ -17,19 +17,27 @@ void Node::setNext(Node *n) {
 	next = n;
 }
 
-void Node::setSong(MP3 mp3){
+void Node::setSong(MP3 mp3) {
 	this->song = mp3;
+}
+
+void Node::setPath(std::string path) {
+	this->path = path;
 }
 
 
 /*Getter Function(s)*/
 
-Node* Node::getNext() const{
+Node* Node::getNext() const {
 	return next;
 }
 
-MP3 Node::getSong() const{
+MP3 Node::getSong() const {
 	return song;
+}
+
+string Node::getPath() const {
+	return path;
 }
 
 

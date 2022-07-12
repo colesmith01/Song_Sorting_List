@@ -36,6 +36,8 @@ public:
 	*/
 	void setSong(MP3 mp3);
 
+	void setPath(std::string path);
+
 	
 	/*
 	Get the next node
@@ -46,6 +48,8 @@ public:
 	Get an integer representing the cell type of this Node
 	*/
 	MP3 getSong() const;
+
+	std::string getPath() const;
 
 
 	/*

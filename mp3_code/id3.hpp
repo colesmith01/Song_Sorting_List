@@ -15,9 +15,9 @@ namespace ID3 {
 	*/
 	struct ID3v1 {
 		char header[3];
-		char title[30];
-		char artist[30];
-		char album[30];
+		char title[97];
+		char artist[50];
+		char album[156];
 		char year[4];
 		char comment[30];
 		char genre[1];
