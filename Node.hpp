@@ -15,6 +15,7 @@ class Node {
 private:
 	//Parameters
 	MP3 song;
+	std::string path;
 	Node* next;
 
 public:
