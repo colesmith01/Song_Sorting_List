@@ -12,6 +12,9 @@
 
 class MP3 {
 public:
+	// whether or not id3v1 data was detected
+	bool hasID3v1;
+
 	/*
 		constructors
 	*/
@@ -262,7 +265,9 @@ private:
 	std::vector<char> data;
 
 	// whether or not id3v1 data was detected
-	bool hasID3v1;
+	//bool hasID3v1;
+	
+	
 	// id3v1 data structure
 	ID3::ID3v1 id3v1;
 
