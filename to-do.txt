@@ -1,3 +1,6 @@
  - Implement metadata type check
  - Make mp3List class -> add recursive directory iterator as scanDir
  - Make songNode class (contains path) -> make each filetype have its own node (use inheritance)
+
+ wav = 1411kbps
+ flac = 871kpbs
