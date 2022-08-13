@@ -11,30 +11,32 @@ instance of type Node
 */
 
 class FileList {
-private:
+protected:
 	//Parameters
 	Node* head;
 	int size;
 	int listIteration;
 	std::vector<std::string> brokenDirs;
 
-	void directory_iterator(std::string rootPath);
-	void addNode(Node* n);
+	void directory_scraper(std::string rootPath);
 
 public:
 	FileList();
 	FileList(FileList *filelist, std::string extensionType);
-	FileList(std::string rootPath);
 
 	Node* getHead() const;
 	Node* getNode(int index) const;
 
 	int getSize() const;
 
+	void addNode(Node* n);
+
+	virtual void exportList() const;
+
 	/*
 	Declare destructor
 	*/
-	virtual ~FileList();
+	~FileList();
 };
 
 

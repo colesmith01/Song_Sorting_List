@@ -4,7 +4,7 @@
 using std::cout;
 using std::endl;
 
-void FileList::directory_iterator(std::string path) {
+void FileList::directory_scraper(std::string path) {
     for (int i = 0; i < path.length(); i++) {
         if (path[i] < 0){
             brokenDirs.push_back(path);
@@ -14,7 +14,7 @@ void FileList::directory_iterator(std::string path) {
 
     for (const auto &entry : std::filesystem::directory_iterator(path)){
         if (std::filesystem::is_directory(entry.path())){
-            directory_iterator(entry.path().string());
+            directory_scraper(entry.path().string());
         }
         else if (entry.path().has_extension()){
             Node* fileNode = new Node;
@@ -44,14 +44,6 @@ FileList::FileList(FileList *filelist, std::string extensionType){
     }
 }
 
-FileList::FileList(std::string rootPath){
-    head = new Node;
-    size = 0;
-    listIteration = 0;
-
-    directory_iterator(rootPath);
-}
-
 void FileList::addNode(Node* n){
     n->setNext(this->head);
     this->head = n;
@@ -77,6 +69,8 @@ int FileList::getSize() const{
     return size;
 }
 
+void FileList::exportList() const {}
+
 /*
 Declare destructor
 */
@@ -91,3 +85,4 @@ FileList::~FileList(){
         }
     }
 }
+
