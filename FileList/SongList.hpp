@@ -4,5 +4,5 @@ class SongList : public FileList {
 public:
     SongList(std::string rootPath);
     
-    void exportList() const;
+    void exportList();
 };

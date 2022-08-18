@@ -18,7 +18,6 @@ void FileList::directory_scraper(std::string path) {
         }
         else if (entry.path().has_extension()){
             Node* fileNode = new Node;
-            
             fileNode->setFile(entry);
             
             addNode(fileNode);
@@ -45,8 +44,14 @@ FileList::FileList(FileList *filelist, std::string extensionType){
 }
 
 void FileList::addNode(Node* n){
-    n->setNext(this->head);
-    this->head = n;
+    
+    if (this->head = 0)
+        this->head = n;
+    else{
+        n->setNext(this->head);
+        this->head = n;
+    }
+
     size++;
 }
 
@@ -58,9 +63,10 @@ Node* FileList::getHead() const{
 Node* FileList::getNode(int index) const{
     Node *n = head;
     
-    for(int i = 0; i < index; i++){
+    for(int i = 1; i < index; i++){
         n = n->getNext();
     }
+    cout << "testNode" << endl;
 
     return n;
 }

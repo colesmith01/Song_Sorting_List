@@ -3,39 +3,41 @@
 #include <fstream>
 
 SongList::SongList(std::string rootPath){
-    head = new Node;
+    head = 0;
     size = 0;
     listIteration = 0;
 
     FileList::directory_scraper(rootPath);
 }
 
-void SongList::exportList() const{
-    std::cout << "test" << std::endl;
-    
+void SongList::exportList(){
+  
     if (!std::filesystem::exists("temp"))
         std::filesystem::create_directory("temp");
     
     FileList newSongs;
+    Node* n;
 
 	for(int i = 0; i < size; i++){
-        Node* n;
+        //breaks on path retrieval of song 2
+        std::cout << "test " << i << " " << this->getNode(i)->getFile().path() << std::endl;
+        
         n = getNode(i);
 
-		if(n->getFile().path().extension() != ".mp3" && !std::filesystem::exists("temp\\" + this->getNode(i)->getFile().path().filename().generic_string())){
+		if((n->getFile().path().extension().string().c_str() != ".mp3")) { // && (!std::filesystem::exists("temp\\" + this->getNode(i)->getFile().path().filename().generic_string()))){
             std::cout << this->getNode(i)->getFile().path() << std::endl; 
 			std::filesystem::copy(n->getFile().path(), "temp");
             newSongs.addNode(n);
         }
+        
     }
 
     for(int i = 0; i < newSongs.getSize(); i++){
         if (!std::filesystem::exists("temp\\" + this->getNode(i)->getFile().path().filename().generic_string())){
-            char* brokenDir;
-            strcpy(brokenDir, newSongs.getNode(i)->getFile().path().string().c_str());
 
-            std::string brokenDir_str = brokenDir;
-            this->brokenDirs.push_back(brokenDir_str);
+            std::string brokenDir = newSongs.getNode(i)->getFile().path().string().c_str();
+
+            this->brokenDirs.push_back(brokenDir);
         }
     }
 
