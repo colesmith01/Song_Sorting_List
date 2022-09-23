@@ -29,7 +29,7 @@ Node* Node::getNext() const {
 }
 
 filesystem::directory_entry Node::getFile() const {
-	cout << file.path() << endl;
+	//last working line
 	return file;
 }
 

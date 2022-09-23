@@ -44,13 +44,10 @@ FileList::FileList(FileList *filelist, std::string extensionType){
 }
 
 void FileList::addNode(Node* n){
-    
-    if (this->head = 0)
-        this->head = n;
-    else{
+    if (this->head != 0)
         n->setNext(this->head);
-        this->head = n;
-    }
+
+    this->head = n;
 
     size++;
 }

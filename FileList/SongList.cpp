@@ -25,7 +25,8 @@ void SongList::exportList(){
         n = getNode(i);
 
 		if((n->getFile().path().extension().string().c_str() != ".mp3")) { // && (!std::filesystem::exists("temp\\" + this->getNode(i)->getFile().path().filename().generic_string()))){
-            std::cout << this->getNode(i)->getFile().path() << std::endl; 
+            std::cout << this->getNode(i)->getFile().path() << std::endl;
+            //second last working line
 			std::filesystem::copy(n->getFile().path(), "temp");
             newSongs.addNode(n);
         }
