@@ -44,22 +44,40 @@ client = deezer2.Client()
 for tag in mp3tags:
     # n += 1
     # print(n)
-    artists = tag.artist.split(',')
-    if(len(artists) == 1):
-        artists = tag.artist.split(';')
 
     if(type(tag.title).__name__ == 'str'):
-        if(type(tag.artist).__name__ == 'str'):
+        if(type(tag.artist).__name__ != 'str'):
             tag.artist = " "
-        if(type(tag.album).__name__ == 'str'):
-            tag.album = " "
+        else:
+            artists = tag.artist.split(',')
+            if(len(artists) == 1):
+                artists = tag.artist.split(';')
+            if(len(artists) == 1):
+                artists = tag.artist.split('/')
+            if(len(artists) == 1):
+                artists = tag.artist.split('&')
         
-        trackSearch = client.search(query = tag.title, artist = tag.artist, album = tag.album)
+        trackSearch = client.search(query = tag.title + " " + tag.artist)
 
         for track in trackSearch:
-            for artist0 in artists:
-                if((track.title.strip() in tag.title) and (artist0.strip().lower() in track.artist)):
+            if(tag.artist != " "):
+                for artist0 in artists:
+                    print(track.title.lower())
+                    print(tag.title.lower())
+                    print(artist0.strip().lower())
+                    print(track.artist.name.lower())
+                    print()
+                    if((track.title.lower() in tag.title.lower()) and (artist0.strip().lower() in track.artist.name.lower())):
+                        download([track.link], 'flac')
+                        break
+                break
+            else:
+                print(track.title.lower())
+                print(tag.title.lower())
+                print()
+                if(track.title in tag.title):
                     download([track.link], 'flac')
+                    break
 
             #remove spaces, lowercase, contains
             # print(track.link)
