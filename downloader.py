@@ -1,5 +1,6 @@
 import os
 import sys
+from matplotlib import artist
 import numpy as np
 
 import deezer2
@@ -33,7 +34,7 @@ def directory_scraper(path, songTags:np.array):
         #))
 
 
-root = 'D:\\Rekordbox USB Backup\\Contents'
+root = 'E:\Contents'
 mp3tags = np.array([])
 mp3tags = directory_scraper(root, mp3tags)
 
@@ -43,19 +44,25 @@ client = deezer2.Client()
 for tag in mp3tags:
     # n += 1
     # print(n)
-    if(type(tag.artist).__name__ != 'str'):
-        tag.artist = ' '
-    if(type(tag.album).__name__ != 'str'):
-        tag.album = ' '
-    if(type(tag.title).__name__ != 'str'):
-        tag.title = ' '
+    artists = tag.artist.split(',')
+    if(len(artists) == 1):
+        artists = tag.artist.split(';')
 
-    trackSearch = client.search(query = tag.title, artist = tag.artist, album = tag.album)
-    for track in trackSearch:
-        artists = tag.artist.split(',')
-        print(len(artists))
-        print(track.title)
-        # print(track.link)
+    if(type(tag.title).__name__ == 'str'):
+        if(type(tag.artist).__name__ == 'str'):
+            tag.artist = " "
+        if(type(tag.album).__name__ == 'str'):
+            tag.album = " "
+        
+        trackSearch = client.search(query = tag.title, artist = tag.artist, album = tag.album)
+
+        for track in trackSearch:
+            for artist0 in artists:
+                if((track.title.strip() in tag.title) and (artist0.strip().lower() in track.artist)):
+                    download([track.link], 'flac')
+
+            #remove spaces, lowercase, contains
+            # print(track.link)
 
     
 
