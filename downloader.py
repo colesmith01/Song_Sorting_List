@@ -8,7 +8,7 @@ from deemix.__main__ import download
 
 from regex import S
 import eyed3
-from sympy import AlgebraicNumber
+#from sympy import AlgebraicNumber
 
 def directory_scraper(path, songTags:np.array):    
     for entry in os.scandir(path):
@@ -41,6 +41,9 @@ mp3tags = directory_scraper(root, mp3tags)
 n = 0
 client = deezer2.Client()
 
+
+deezerLinks = open('download_links.txt', 'w')
+
 for tag in mp3tags:
     # n += 1
     # print(n)
@@ -56,31 +59,37 @@ for tag in mp3tags:
                 artists = tag.artist.split('/')
             if(len(artists) == 1):
                 artists = tag.artist.split('&')
-        
+
         trackSearch = client.search(query = tag.title + " " + tag.artist)
 
         for track in trackSearch:
             if(tag.artist != " "):
+                isExit = False
                 for artist0 in artists:
-                    print(track.title.lower())
-                    print(tag.title.lower())
-                    print(artist0.strip().lower())
-                    print(track.artist.name.lower())
-                    print()
                     if((track.title.lower() in tag.title.lower()) and (artist0.strip().lower() in track.artist.name.lower())):
-                        download([track.link], 'flac')
+                        deezerLinks.write(track.link)
+                        deezerLinks.write('\n')
+                        np.delete(mp3tags, np.where(tag))
+
+                        isExit = True
                         break
-                break
+                if (isExit):
+                    break
             else:
-                print(track.title.lower())
-                print(tag.title.lower())
-                print()
                 if(track.title in tag.title):
-                    download([track.link], 'flac')
+                    deezerLinks.write(track.link)
+                    deezerLinks.write('\n')
+                    np.delete(mp3tags, np.where(tag))
                     break
 
-            #remove spaces, lowercase, contains
-            # print(track.link)
+
+failedDownloads = open('failed_downloads.txt', 'w')
+for tag in mp3tags:
+    failedDownloads.write(tag.title)
+    failedDownloads.write('\n')
+    failedDownloads.write(tag.artist)
+    failedDownloads.write('\n')
+    failedDownloads.write('\n')
 
     
 
