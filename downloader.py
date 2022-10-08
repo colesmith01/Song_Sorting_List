@@ -41,6 +41,8 @@ def directory_scraper(path, songTags:np.array):
     
     return songTags
 
+# -----------------------------------
+
 #create array of id3 data
 mp3tags = np.array([])
 mp3tags = directory_scraper(root, mp3tags)

@@ -3,16 +3,81 @@ import shutil as sh
 
 import bytes
 import unicodedata
+
 import taglib
+import deezer2 as dz
 
 
 class song_manager:
     def __init__(self):
         self.dir_id3 = [[]]
+        self.mp3_id3 = [[]]
         self.plist_id3 = []
         self.rboxTagNames = []
 
-    #recursive function to scan a directory and its subdirectories for mp3 files and return a numpy array of id3 data
+    #extract title from inputted id3 tag
+    def ___title(tags, ptyTypes = None):
+        if tags != []:
+            if isinstance(tags[0], (dict)):
+                return tags[0]["TITLE"][0]
+            elif isinstance(tags, (list)):
+                if ptyTypes != None:
+                    i = None
+
+                    for tagName in ptyTypes:
+                        if tagName == 'Track Title':
+                            i = ptyTypes.index(tagName)
+                            break
+
+                    if i == None:
+                        print("Error: No Track Title tag type found in ptyTypes")
+                    else:
+                        return tags[i]
+                else:
+                    print("Error: ptyTypes required for list type tags element")
+        else:
+            return ''
+
+    #extract artist from inputted id3 tag
+    def ___artists(tags, ptyTypes = None):
+        if isinstance(tags[0], (dict)):
+            return ' '.join(tags[0]["ARTIST"])
+        elif isinstance(tags, (list)):
+            if ptyTypes != None:
+                i = None
+
+                for tagName in ptyTypes:
+                    if tagName == 'Artist':
+                        i = ptyTypes.index(tagName)
+
+                if i == None:
+                    print("Error: No Artist tag type found in ptyTypes")
+                else:
+                    artists = tags[i].replace(',', "")
+                    artists = tags[i].replace(';', "")
+                    
+                    return artists
+            else:
+                print("Error: ptyTypes required for list type tags element")
+        else:
+            return ''
+
+    def ___cpy_file(source_file):
+        #create temp folder if doesn't exist
+        try:
+            os.mkdir('temp')
+        except OSError as error:
+            if '[WinError 183]' in error:
+                pass
+            else:
+                print(error)
+        
+        #copy file to temp folder
+        sh.copy2(source_file, 'temp')
+
+
+
+    #recursive function to scan a directory and its subdirectories for music files and add dictionaries of id3 data to dir_id3
     def general_recursive_scraper(self, path):
         extensions = []
 
@@ -20,27 +85,50 @@ class song_manager:
         for entry in os.scandir(path):
             #if directory found, recursively call function
             if entry.is_dir():
-                    songTags = self.general_recursive_scraper(entry.path, self.dir_id3)
+                    songTags = self.general_recursive_scraper(entry.path)
             #if file found, check for id3 data and if found, add to songTags array
             elif entry.is_file():
                     filename, file_extension = os.path.splitext(entry.path)
 
-                    typ = 'file'
                     if (file_extension == ".mp3" or file_extension == ".wav" or file_extension == ".flac" or file_extension == ".aiff"):
                         try:
                             audioFile = taglib.File(entry.path)                
                             tag = audioFile.tags
-                            songTags.append([tag, entry.path])
+                            self.dir_id3.append([tag, entry.path])
                         except:
                             print('error reading path: ' + entry.path)
                     else:
                         print('non-music file type: ' + file_extension)
-            elif entry.is_symlink():
-                    typ = 'link'
-            else:
-                    typ = 'unknown'
-        
-        return songTags
+
+
+    
+    #recursive function to scan a directory and its subdirectories for mp3 files, 
+    # add dictionaries of id3 data to dir_id3, and copy all raw song files into a temp folder
+    def mp3_recursive_scraper(self, path):
+        extensions = []
+
+        #scan each file/folder in path directory    
+        for entry in os.scandir(path):
+            #if directory found, recursively call function
+            if entry.is_dir():
+                    songTags = self.mp3_recursive_scraper(entry.path)
+            elif entry.is_file():
+                    filename, file_extension = os.path.splitext(entry.path)
+
+                    #if file found and is mp3 check for id3 data add to dir_id3 list alongside file path
+                    if (file_extension == ".mp3"):
+                        try:
+                            audioFile = taglib.File(entry.path)                
+                            tag = audioFile.tags
+                            self.dir_id3.append([tag, entry.path])
+                        except:
+                            print('error reading path: ' + entry.path)
+
+                    #if raw file copy to temp folder
+                    elif (file_extension == ".wav" or file_extension == ".flac" or file_extension == ".aiff"):
+                        sh.copy2(entry.path, 'temp')
+                    else:    
+                        print('non-music file type: ' + file_extension)
 
 
     #scrape the id3 data from a rekordbox playlist exported to .txt (KUVO)
@@ -65,7 +153,7 @@ class song_manager:
             #decode byte data of line
             songData = line.decode('utf16', 'replace').split('\t')
 
-            #create 
+            #create list of id3 data from each line
             rboxRow = []
             for value in songData:
                 rboxRow.append(value)
@@ -73,55 +161,120 @@ class song_manager:
 
             self.plist_id3.append(rboxRow)
 
+        #extract id3 data descriptors
         self.rboxTagNames = self.plist_id3[0]
         self.plist_id3.pop(0)
+
+        self.plist_id3.sort(key=lambda tags: self.___title(tags, ptyTypes=self.rboxTagNames))
 
         plistFile.close()
 
 
+    #copies all songs found from directories that are not contained in playlists into a temp folder
+    def import_unsorted(self):
+        self.dir_id3.sort(key=lambda tags: self.___title(tags))
+
+        #initialise sorting data
+        unsortedTags = []
+        externalSourceTags = [[]]
+        ix1 = 0
+        ix2 = 1
+
+        #compare both lists of id3 data
+        while ix1 < len(self.plist_id3) and ix2 < len(self.dir_id3):
+            unsortedTagsEnd = len(unsortedTags) - 1
+            
+            title1 = self.___title(self.plist_id3[ix1], ptyTypes=self.rboxTagNames)
+            title2 = self.___title(self.dir_id3[ix2])
+            artist1 = self.___artists(self.plist_id3[ix1], ptyTypes=self.rboxTagNames)
+            artist2 = self.___artists(self.dir_id3[ix2])
+
+            if title1 > title2:
+                unsortedTags.append(self.dir_id3[ix2])
+                ix2 += 1
+            elif title1 == title2 and artist1 == artist2:
+                ix1 += 1
+                ix2 += 1
+            else:
+                externalSourceTags.append(self.plist_id3[ix1])
+                ix1 += 1
 
 
-    def ___title(tags, ptyTypes = None):
-        if tags != []:
-            if isinstance(tags[0], (dict)):
-                return tags[0]["TITLE"][0]
-            elif isinstance(tags, (list)):
-                if ptyTypes != None:
-                    i = None
 
-                    for tagName in ptyTypes:
-                        if tagName == 'Track Title':
-                            i = ptyTypes.index(tagName)
+        unsortedSongs = open('unsorted_songs.txt', 'w', encoding="utf-16")
+
+        #copy all unsorted songs to temp folder
+        for tag in unsortedTags:
+            self.___cpy_file(tag[1])
+
+        unsortedSongs.close()
+
+
+    #export all mp3 files stored in song_manager as either download links or failed downloads (couldn't find link)
+    def export_mp3Links(self):
+        #create mask layer for mp3tags
+        downloadMask = list(len(self.mp3_id3), dtype=bool)
+
+        #open a deezer - python client
+        client = dz.Client()
+
+        #create text file to export download links
+        deezerLinks = open('download_links.txt', 'w')
+
+        #loop through all stored id3 tags
+        for tag in self.mp3_id3:
+            #if title is stored in id3 tag
+            if(type(tag["TITLE"][0]).__name__ == 'str'):
+
+                #artists = ' '.join(tag["ARTIST"])
+                artists = tag["ARTIST"]
+
+                #search deezer servers for song identified by id3 tag
+                trackSearch = client.search(query = tag["TITLE"][0] + " " + ' '.join(tag["ARTIST"]))
+
+                #scan results from deezer servers and try to match to id3 tag
+                for track in trackSearch:
+                    if(tag["ARTIST"][0] != ''):
+                        isExit = False
+                        for artist0 in artists:
+                            #if id3 tag and server result match, export server link to download_links.txt and mask the mp3_id3 index
+                            if((tag["TITLE"][0].lower() in track.title.lower()) and (artist0.strip().lower() in track.artist.name.lower())):
+                                deezerLinks.write(track.link + ";")
+                                deezerLinks.write('\n')
+                                downloadMask[self.mp3_id3.index(tag)] = False
+
+                                isExit = True
+                                break
+                        if (isExit):
+                            break
+                    else:
+                        #if id3 tag and server result match, export server link to download_links.txt and mask the mp3_id3 index
+                        if(tag["TITLE"][0].lower() in track.title.lower()):
+                            deezerLinks.write(track.link + ";")
+                            deezerLinks.write('\n')
+                            downloadMask[self.mp3_id3.index(tag)] = False
+                            #np.delete(mp3tags, np.where(tag))
                             break
 
-                    if i == None:
-                        print("Error: No Track Title tag type found in ptyTypes")
-                    else:
-                        return tags[i]
-                else:
-                    print("Error: ptyTypes required for list type tags element")
-        else:
-            return ''
 
-    def ___artists(tags, ptyTypes = None):
-        if isinstance(tags[0], (dict)):
-            return ' '.join(tags[0]["ARTIST"])
-        elif isinstance(tags, (list)):
-            if ptyTypes != None:
-                i = None
+        deezerLinks.close()
 
-                for tagName in ptyTypes:
-                    if tagName == 'Artist':
-                        i = ptyTypes.index(tagName)
+        #create text file to export songs that did not match server results
+        failedDownloads = open('failed_downloads.txt', 'w', encoding="utf-16")
 
-                if i == None:
-                    print("Error: No Artist tag type found in ptyTypes")
-                else:
-                    artists = tags[i].replace(',', "")
-                    artists = tags[i].replace(';', "")
-                    
-                    return artists
-            else:
-                print("Error: ptyTypes required for list type tags element")
-        else:
-            return ''
+        #write title and artist of songs that did not match server results to failed_downloads.txt
+        for tag in  self.mp3_id3:
+            if(downloadMask[self.mp3_id3.index(tag)] and type(tag["TITLE"][0]).__name__ == 'str'):
+                failedDownloads.write(tag.title)
+                failedDownloads.write('\n')
+                if(tag["ARTIST"][0] != ''):
+                    failedDownloads.write('; '.join(tag["ARTIST"]))
+                    failedDownloads.write('\n')
+                
+                failedDownloads.write('\n')
+
+        failedDownloads.close()
+
+
+
+    

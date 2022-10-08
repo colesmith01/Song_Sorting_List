@@ -1,3 +1,3 @@
- - Implement metadata type check
- - Make mp3List class -> add recursive directory iterator as scanDir
- - Make songNode class (contains path) -> make each filetype have its own node (use inheritance)
+ - sort scanners to exclude duplicates
+ - make downloader and comparison scripts work with oop
+ - make playlist scanner create dictionary (standardise data)
