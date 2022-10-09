@@ -1,3 +1,2 @@
- - sort scanners to exclude duplicates
- - make downloader and comparison scripts work with oop
- - make playlist scanner create dictionary (standardise data)
+ - make comparison script work with oop
+ - make playlist scanner create dictionary (standardise data structure type)

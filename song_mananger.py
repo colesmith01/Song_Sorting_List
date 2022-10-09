@@ -16,7 +16,7 @@ class song_manager:
         self.rboxTagNames = []
 
     #extract title from inputted id3 tag
-    def ___title(tags, ptyTypes = None):
+    def getTitle(self, tags, ptyTypes = None):
         if tags != []:
             if isinstance(tags[0], (dict)):
                 return tags[0]["TITLE"][0]
@@ -36,13 +36,13 @@ class song_manager:
                 else:
                     print("Error: ptyTypes required for list type tags element")
         else:
-            return ''
+            return str()
 
     #extract artist from inputted id3 tag
-    def ___artists(tags, ptyTypes = None):
-        if isinstance(tags[0], (dict)):
+    def getArtists(self, tags, ptyTypes = None):
+        if isinstance(tags[0], (dict)) and "ARTIST" in tags[0]:
             return ' '.join(tags[0]["ARTIST"])
-        elif isinstance(tags, (list)):
+        elif isinstance(tags, (list)) and not isinstance(tags[0], (dict)):
             if ptyTypes != None:
                 i = None
 
@@ -60,9 +60,9 @@ class song_manager:
             else:
                 print("Error: ptyTypes required for list type tags element")
         else:
-            return ''
+            return str()
 
-    def ___cpy_file(source_file):
+    def ___cpy_file(self, source_file):
         #create temp folder if doesn't exist
         try:
             os.mkdir('temp')
@@ -94,11 +94,16 @@ class song_manager:
                         try:
                             audioFile = taglib.File(entry.path)                
                             tag = audioFile.tags
-                            self.dir_id3.append([tag, entry.path])
+
+                            if tag not in self.dir_id3:
+                                self.dir_id3.append([tag, entry.path])
                         except:
                             print('error reading path: ' + entry.path)
                     else:
                         print('non-music file type: ' + file_extension)
+        
+        if [] in self.dir_id3:
+            self.dir_id3.remove([])
 
 
     
@@ -120,7 +125,11 @@ class song_manager:
                         try:
                             audioFile = taglib.File(entry.path)                
                             tag = audioFile.tags
-                            self.dir_id3.append([tag, entry.path])
+
+                            if tag not in self.dir_id3:
+                                self.dir_id3.append([tag, entry.path])
+                            if tag not in self.mp3_id3:
+                                self.mp3_id3.append([tag, entry.path])
                         except:
                             print('error reading path: ' + entry.path)
 
@@ -129,6 +138,10 @@ class song_manager:
                         sh.copy2(entry.path, 'temp')
                     else:    
                         print('non-music file type: ' + file_extension)
+        if [] in self.dir_id3:
+            self.dir_id3.remove([])
+        if [] in self.mp3_id3:
+            self.mp3_id3.remove([])
 
 
     #scrape the id3 data from a rekordbox playlist exported to .txt (KUVO)
@@ -158,21 +171,21 @@ class song_manager:
             for value in songData:
                 rboxRow.append(value)
             
-
-            self.plist_id3.append(rboxRow)
+            if rboxRow not in self.plist_id3:
+                self.plist_id3.append(rboxRow)
 
         #extract id3 data descriptors
         self.rboxTagNames = self.plist_id3[0]
         self.plist_id3.pop(0)
 
-        self.plist_id3.sort(key=lambda tags: self.___title(tags, ptyTypes=self.rboxTagNames))
+        self.plist_id3.sort(key=lambda tags: self.getTitle(tags, ptyTypes=self.rboxTagNames))
 
         plistFile.close()
 
 
     #copies all songs found from directories that are not contained in playlists into a temp folder
     def import_unsorted(self):
-        self.dir_id3.sort(key=lambda tags: self.___title(tags))
+        self.dir_id3.sort(key=lambda tags: self.getTitle(tags))
 
         #initialise sorting data
         unsortedTags = []
@@ -184,10 +197,10 @@ class song_manager:
         while ix1 < len(self.plist_id3) and ix2 < len(self.dir_id3):
             unsortedTagsEnd = len(unsortedTags) - 1
             
-            title1 = self.___title(self.plist_id3[ix1], ptyTypes=self.rboxTagNames)
-            title2 = self.___title(self.dir_id3[ix2])
-            artist1 = self.___artists(self.plist_id3[ix1], ptyTypes=self.rboxTagNames)
-            artist2 = self.___artists(self.dir_id3[ix2])
+            title1 = self.getTitle(self.plist_id3[ix1], ptyTypes=self.rboxTagNames)
+            title2 = self.getTitle(self.dir_id3[ix2])
+            artist1 = self.getArtists(self.plist_id3[ix1], ptyTypes=self.rboxTagNames)
+            artist2 = self.getArtists(self.dir_id3[ix2])
 
             if title1 > title2:
                 unsortedTags.append(self.dir_id3[ix2])
@@ -213,7 +226,7 @@ class song_manager:
     #export all mp3 files stored in song_manager as either download links or failed downloads (couldn't find link)
     def export_mp3Links(self):
         #create mask layer for mp3tags
-        downloadMask = list(len(self.mp3_id3), dtype=bool)
+        downloadMask = [True] * len(self.mp3_id3)
 
         #open a deezer - python client
         client = dz.Client()
@@ -224,21 +237,22 @@ class song_manager:
         #loop through all stored id3 tags
         for tag in self.mp3_id3:
             #if title is stored in id3 tag
-            if(type(tag["TITLE"][0]).__name__ == 'str'):
-
-                #artists = ' '.join(tag["ARTIST"])
-                artists = tag["ARTIST"]
+            if  "TITLE" in tag[0]:
 
                 #search deezer servers for song identified by id3 tag
-                trackSearch = client.search(query = tag["TITLE"][0] + " " + ' '.join(tag["ARTIST"]))
+                trackSearch = client.search(query =  self.getTitle(tag) + " " + self.getArtists(tag))
+                if trackSearch == None:
+                    continue
 
                 #scan results from deezer servers and try to match to id3 tag
                 for track in trackSearch:
-                    if(tag["ARTIST"][0] != ''):
+                    if "ARTIST" in tag[0]:
                         isExit = False
+
+                        artists = tag[0]["ARTIST"]
                         for artist0 in artists:
                             #if id3 tag and server result match, export server link to download_links.txt and mask the mp3_id3 index
-                            if((tag["TITLE"][0].lower() in track.title.lower()) and (artist0.strip().lower() in track.artist.name.lower())):
+                            if((self.getTitle(tag).lower() in track.title.lower()) and (artist0.strip().lower() in track.artist.name.lower())):
                                 deezerLinks.write(track.link + ";")
                                 deezerLinks.write('\n')
                                 downloadMask[self.mp3_id3.index(tag)] = False
@@ -249,14 +263,13 @@ class song_manager:
                             break
                     else:
                         #if id3 tag and server result match, export server link to download_links.txt and mask the mp3_id3 index
-                        if(tag["TITLE"][0].lower() in track.title.lower()):
+                        if(self.getTitle(tag).lower() in track.title.lower()):
                             deezerLinks.write(track.link + ";")
                             deezerLinks.write('\n')
                             downloadMask[self.mp3_id3.index(tag)] = False
                             #np.delete(mp3tags, np.where(tag))
                             break
-
-
+            
         deezerLinks.close()
 
         #create text file to export songs that did not match server results
@@ -264,17 +277,19 @@ class song_manager:
 
         #write title and artist of songs that did not match server results to failed_downloads.txt
         for tag in  self.mp3_id3:
-            if(downloadMask[self.mp3_id3.index(tag)] and type(tag["TITLE"][0]).__name__ == 'str'):
-                failedDownloads.write(tag.title)
+            if downloadMask[self.mp3_id3.index(tag)] and "TITLE" in tag[0]:
+                failedDownloads.write(self.getTitle(tag))
                 failedDownloads.write('\n')
-                if(tag["ARTIST"][0] != ''):
-                    failedDownloads.write('; '.join(tag["ARTIST"]))
+                if "ARTIST" in tag[0]:
+                    failedDownloads.write('; '.join(tag[0]["ARTIST"]))
                     failedDownloads.write('\n')
                 
+                failedDownloads.write("path: " + tag[1])
+
+                failedDownloads.write('\n')
                 failedDownloads.write('\n')
 
         failedDownloads.close()
-
 
 
     
