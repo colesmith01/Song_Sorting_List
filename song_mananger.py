@@ -67,10 +67,10 @@ class song_manager:
         try:
             os.mkdir('temp')
         except OSError as error:
-            if '[WinError 183]' in error:
-                pass
-            else:
+            if error.args[0] != '[WinError 183]':
                 print(error)
+            pass
+                
         
         #copy file to temp folder
         sh.copy2(source_file, 'temp')
