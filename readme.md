@@ -52,9 +52,11 @@ Scrapes the path input directory and sub-directories for any music files, copies
 **ONLY WORKS WITH REKORDBOX PLAYLISTS EXPORTED TO .txt (KUVO)**
 Scrapes the playlist input path for id3 data of songs exported from rekordbox library.
 ## import_unsorted()
+
 Copies any music files that were not found from rekordbox playlists but were found from directory scraping into a temp folder.
 ## export_mp3Links()
 **IN ORDER TO DOWNLOAD EXPORTED SONGS, A DEEZER SUBSCRIPTION IS NECESSARY**
+
 Creates test files named download_links.txt & failed_downloads.txt
 
 **download_links.txt:** Contains download links of all songs defined by id3 tags scraped from .mp3 files.
