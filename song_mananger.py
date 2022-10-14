@@ -78,7 +78,7 @@ class song_manager:
 
 
     #recursive function to scan a directory and its subdirectories for music files and add dictionaries of id3 data to dir_id3
-    def general_recursive_scraper(self, path):
+    def general_recursive_scraper(self, path): 
         extensions = []
 
         #scan each file/folder in path directory    
@@ -145,7 +145,7 @@ class song_manager:
 
 
     #scrape the id3 data from a rekordbox playlist exported to .txt (KUVO)
-    def playlist_scraper(self, dir:str):
+    def playlist_scraper(self, path:str):
         #open playlist file to read byte data
         plistFile = open(dir, 'rb')
 
