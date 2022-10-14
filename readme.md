@@ -1,5 +1,9 @@
 # song_manager.py
 song_manager is an object that can be used to sort and download songs from directories and rekordbox playlists.
+# downloader.py
+downloader is an example script demonstrating the use case of extracting download links.
+# unsorted_songs_import.py
+unsorted_songs_import.py is an example script demonstrating the use case of extracting new songs from a directory of music files.
 # Required Scripts, APIs and Packages
 https://github.com/deafmute1/deemix-librip (finding download links)
 https://github.com/supermihi/pytaglib (reading id3 tags)

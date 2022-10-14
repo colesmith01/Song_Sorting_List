@@ -1,2 +1,2 @@
- - make comparison script work with oop
  - make playlist scanner create dictionary (standardise data structure type)
+ - add type checks to method inputs
