@@ -13,6 +13,7 @@ class song_manager:
         self.dir_id3 = [[]]
         self.mp3_id3 = [[]]
         self.plist_id3 = []
+        self.sorted_id3 = []
         self.rboxTagNames = []
 
     #extract title from inputted id3 tag
@@ -146,41 +147,82 @@ class song_manager:
 
     #scrape the id3 data from a rekordbox playlist exported to .txt (KUVO)
     def playlist_scraper(self, path:str):
-        #open playlist file to read byte data
-        plistFile = open(dir, 'rb')
+        filename, file_extension = os.path.splitext(path)
+        if file_extension == ".txt":
+            #open playlist file to read byte data
+            plistFile = open(dir, 'rb')
 
-        #read each line of id3 data from txt file
-        for line in plistFile:
-            
-            #skip empty lines
-            if line == b'\x00\n' or line == b'\x00':
-                continue
+            #read each line of id3 data from txt file
+            for line in plistFile:
+                
+                #skip empty lines
+                if line == b'\x00\n' or line == b'\x00':
+                    continue
 
-            #declare utf classifier
-            encClassif = b'\xff'
+                #declare utf classifier
+                encClassif = b'\xff'
 
-            #add utf classifier to lines w/out
-            if not(line.startswith(encClassif)):
-                line = encClassif + line
-            
-            #decode byte data of line
-            songData = line.decode('utf16', 'replace').split('\t')
+                #add utf classifier to lines w/out
+                if not(line.startswith(encClassif)):
+                    line = encClassif + line
+                
+                #decode byte data of line
+                songData = line.decode('utf16', 'replace').split('\t')
 
-            #create list of id3 data from each line
-            rboxRow = []
-            for value in songData:
-                rboxRow.append(value)
-            
-            if rboxRow not in self.plist_id3:
-                self.plist_id3.append(rboxRow)
+                #create list of id3 data from each line
+                rboxRow = []
+                for value in songData:
+                    rboxRow.append(value)
+                
+                if rboxRow not in self.plist_id3:
+                    self.plist_id3.append(rboxRow)
 
-        #extract id3 data descriptors
-        self.rboxTagNames = self.plist_id3[0]
-        self.plist_id3.pop(0)
+            #extract id3 data descriptors
+            self.rboxTagNames = self.plist_id3[0]
+            self.plist_id3.pop(0)
 
-        self.plist_id3.sort(key=lambda tags: self.getTitle(tags, ptyTypes=self.rboxTagNames))
+            self.plist_id3.sort(key=lambda tags: self.getTitle(tags, ptyTypes=self.rboxTagNames))
 
-        plistFile.close()
+            plistFile.close()
+        elif file_extension == '':
+            for entry in os.scandir(path):
+                filename, file_extension = os.path.splitext(entry.path)
+                if file_extension == ".txt" and filename != "All":
+                    #open playlist file to read byte data
+                    plistFile = open(dir, 'rb')
+
+                    #read each line of id3 data from txt file
+                    for line in plistFile:
+                        
+                        #skip empty lines
+                        if line == b'\x00\n' or line == b'\x00':
+                            continue
+
+                        #declare utf classifier
+                        encClassif = b'\xff'
+
+                        #add utf classifier to lines w/out
+                        if not(line.startswith(encClassif)):
+                            line = encClassif + line
+                        
+                        #decode byte data of line
+                        songData = line.decode('utf16', 'replace').split('\t')
+
+                        #create list of id3 data from each line
+                        rboxRow = []
+                        for value in songData:
+                            rboxRow.append(value)
+                        
+                        if rboxRow not in self.sorted_id3:
+                            self.sorted_id3.append(rboxRow)
+
+                    #extract id3 data descriptors
+                    self.rboxTagNames = self.sorted_id3[0]
+                    self.sorted_id3.pop(0)
+
+                    self.sorted_id3.sort(key=lambda tags: self.getTitle(tags, ptyTypes=self.rboxTagNames))
+
+                    plistFile.close()
 
 
     #copies all songs found from directories that are not contained in playlists into a temp folder
@@ -290,6 +332,52 @@ class song_manager:
                 failedDownloads.write('\n')
 
         failedDownloads.close()
-
-
     
+    def find_unsorted(self, root:str):
+        self.playlist_scraper(root + '\All.txt')
+        self.playlist_scraper(root)
+
+        #initialise sorting data
+        unsortedTags = []
+        externalSourceTags = [[]]
+        ix1 = 0
+        ix2 = 1
+
+        #songs not in playlist get copied -> songs not sorted into playlists get exported
+
+        #compare both lists of id3 data
+        while ix1 < len(self.sorted_id3) and ix2 < len(self.plist_id3):
+            unsortedTagsEnd = len(unsortedTags) - 1
+            
+            title1 = self.getTitle(self.sorted_id3[ix1], ptyTypes=self.rboxTagNames)
+            title2 = self.getTitle(self.plist_id3[ix2])
+            artist1 = self.getArtists(self.sorted_id3[ix1], ptyTypes=self.rboxTagNames)
+            artist2 = self.getArtists(self.plist_id3[ix2])
+
+            if title1 > title2:
+                unsortedTags.append(self.plist_id3[ix2])
+                ix2 += 1
+            elif title1 == title2 and artist1 == artist2:
+                ix1 += 1
+                ix2 += 1
+            else:
+                externalSourceTags.append(self.sorted_id3[ix1])
+                ix1 += 1
+
+
+
+        unsortedSongs = open('unsorted_songs.txt', 'w', encoding="utf-16")
+
+        #copy all unsorted songs to temp folder
+        for tag in unsortedTags:
+           if "TITLE" in tag[0]:
+                unsortedSongs.write(self.getTitle(tag))
+                unsortedSongs.write('\n')
+                if "ARTIST" in tag[0]:
+                    unsortedSongs.write('; '.join(tag[0]["ARTIST"]))
+                    unsortedSongs.write('\n')
+
+                unsortedSongs.write('\n')
+                unsortedSongs.write('\n')
+
+        unsortedSongs.close()
