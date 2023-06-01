@@ -57,7 +57,7 @@ Copies any music files that were not found from rekordbox playlists but were fou
 ## export_mp3Links()
 **IN ORDER TO DOWNLOAD EXPORTED SONGS, A DEEZER SUBSCRIPTION IS NECESSARY**
 
-Creates test files named download_links.txt & failed_downloads.txt
+Creates text files named download_links.txt & failed_downloads.txt
 
 **download_links.txt:** Contains download links of all songs defined by id3 tags scraped from .mp3 files.
 **failed_downloads.txt:** Contains the title, artist(s) and path of any songs that download links could not be found for.
