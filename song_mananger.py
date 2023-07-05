@@ -107,6 +107,7 @@ class song_manager:
             self.dir_id3.remove([])
 
 
+    #CAN PROBABLY JUST CALL GENERAL_RECURSIVE_SCRAPER AND ADD AN isMp3 tag 
     
     #recursive function to scan a directory and its subdirectories for mp3 files, 
     # add dictionaries of id3 data to dir_id3, and copy all raw song files into a temp folder
@@ -134,6 +135,7 @@ class song_manager:
                         except:
                             print('error reading path: ' + entry.path)
 
+                    #CAN PROBABLY HAVE LIST OF EXTENSIONS AND USE "in" KEYWORD
                     #if raw file copy to temp folder
                     elif (file_extension == ".wav" or file_extension == ".flac" or file_extension == ".aiff"):
                         sh.copy2(entry.path, 'temp')
@@ -145,6 +147,7 @@ class song_manager:
             self.mp3_id3.remove([])
 
 
+    #HAS REPEATED CODE
     #scrape the id3 data from a rekordbox playlist exported to .txt (KUVO)
     def playlist_scraper(self, path:str):
         filename, file_extension = os.path.splitext(path)
@@ -169,6 +172,8 @@ class song_manager:
                 #decode byte data of line
                 songData = line.decode('utf16', 'replace').split('\t')
 
+                
+                #CHANGE THIS TO DICTIONARY
                 #create list of id3 data from each line
                 rboxRow = []
                 for value in songData:
@@ -309,7 +314,6 @@ class song_manager:
                             deezerLinks.write(track.link + ";")
                             deezerLinks.write('\n')
                             downloadMask[self.mp3_id3.index(tag)] = False
-                            #np.delete(mp3tags, np.where(tag))
                             break
             
         deezerLinks.close()
