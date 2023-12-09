@@ -1,8 +1,8 @@
 import os
 import shutil as sh
 
-import bytes
-import unicodedata
+#import bytes
+#import unicodedata
 
 import taglib
 import deezer2 as dz
@@ -32,6 +32,7 @@ class song_manager:
 
                     if i == None:
                         print("Error: No Track Title tag type found in ptyTypes")
+                        return ''
                     else:
                         return tags[i]
                 else:
@@ -53,6 +54,7 @@ class song_manager:
 
                 if i == None:
                     print("Error: No Artist tag type found in ptyTypes")
+                    return ''
                 else:
                     artists = tags[i].replace(',', "")
                     artists = tags[i].replace(';', "")
@@ -149,11 +151,11 @@ class song_manager:
 
     #HAS REPEATED CODE
     #scrape the id3 data from a rekordbox playlist exported to .txt (KUVO)
-    def playlist_scraper(self, path:str):
+    def playlist_scraper(self, path:str, master = 'All'):
         filename, file_extension = os.path.splitext(path)
         if file_extension == ".txt":
             #open playlist file to read byte data
-            plistFile = open(dir, 'rb')
+            plistFile = open(path, 'rb')
 
             #read each line of id3 data from txt file
             for line in plistFile:
@@ -191,10 +193,10 @@ class song_manager:
             plistFile.close()
         elif file_extension == '':
             for entry in os.scandir(path):
-                filename, file_extension = os.path.splitext(entry.path)
-                if file_extension == ".txt" and filename != "All":
+                filename, file_extension = os.path.splitext(entry.name)
+                if file_extension == ".txt" and filename != master:
                     #open playlist file to read byte data
-                    plistFile = open(dir, 'rb')
+                    plistFile = open(entry, 'rb')
 
                     #read each line of id3 data from txt file
                     for line in plistFile:
@@ -212,22 +214,21 @@ class song_manager:
                         
                         #decode byte data of line
                         songData = line.decode('utf16', 'replace').split('\t')
-
-                        #create list of id3 data from each line
-                        rboxRow = []
-                        for value in songData:
-                            rboxRow.append(value)
                         
-                        if rboxRow not in self.sorted_id3:
-                            self.sorted_id3.append(rboxRow)
+                        if songData not in self.sorted_id3:
+                            self.sorted_id3.append(songData)
 
-                    #extract id3 data descriptors
-                    self.rboxTagNames = self.sorted_id3[0]
-                    self.sorted_id3.pop(0)
+            #extract id3 data descriptors
+            self.rboxTagNames = self.sorted_id3[0]
+            self.sorted_id3.pop(0)
 
-                    self.sorted_id3.sort(key=lambda tags: self.getTitle(tags, ptyTypes=self.rboxTagNames))
+            if [] in self.sorted_id3:
+                self.sorted_id3.remove([])
 
-                    plistFile.close()
+
+            self.sorted_id3.sort(key=lambda tags: self.getTitle(tags, ptyTypes=self.rboxTagNames))
+
+            plistFile.close()
 
 
     #copies all songs found from directories that are not contained in playlists into a temp folder
@@ -337,15 +338,15 @@ class song_manager:
 
         failedDownloads.close()
     
-    def find_unsorted(self, root:str):
-        self.playlist_scraper(root + '\All.txt')
-        self.playlist_scraper(root)
+    def find_unsorted(self, root:str, master = 'All'):
+        self.playlist_scraper(root + '\\' + master + '.txt', master)
+        self.playlist_scraper(root, master)
 
         #initialise sorting data
         unsortedTags = []
         externalSourceTags = [[]]
-        ix1 = 0
-        ix2 = 1
+        ix1 = 0 #All
+        ix2 = 1 #Playlists
 
         #songs not in playlist get copied -> songs not sorted into playlists get exported
 
@@ -354,9 +355,9 @@ class song_manager:
             unsortedTagsEnd = len(unsortedTags) - 1
             
             title1 = self.getTitle(self.sorted_id3[ix1], ptyTypes=self.rboxTagNames)
-            title2 = self.getTitle(self.plist_id3[ix2])
+            title2 = self.getTitle(self.plist_id3[ix2], ptyTypes=self.rboxTagNames)
             artist1 = self.getArtists(self.sorted_id3[ix1], ptyTypes=self.rboxTagNames)
-            artist2 = self.getArtists(self.plist_id3[ix2])
+            artist2 = self.getArtists(self.plist_id3[ix2], ptyTypes=self.rboxTagNames)
 
             if title1 > title2:
                 unsortedTags.append(self.plist_id3[ix2])
@@ -374,11 +375,13 @@ class song_manager:
 
         #copy all unsorted songs to temp folder
         for tag in unsortedTags:
-           if "TITLE" in tag[0]:
-                unsortedSongs.write(self.getTitle(tag))
+           tagTitle = self.getTitle(tag, ptyTypes=self.rboxTagNames)
+           tagArtist = self.getArtists(tag, ptyTypes=self.rboxTagNames)
+           if tagTitle != '':
+                unsortedSongs.write(tagTitle)
                 unsortedSongs.write('\n')
-                if "ARTIST" in tag[0]:
-                    unsortedSongs.write('; '.join(tag[0]["ARTIST"]))
+                if tagArtist != '':
+                    unsortedSongs.write(tagArtist)
                     unsortedSongs.write('\n')
 
                 unsortedSongs.write('\n')
